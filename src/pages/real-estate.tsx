@@ -39,7 +39,7 @@ const RealEstate: React.FC = () => {
 
             {data.properties.length > 0 && (
                 <>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+                    <div className="grid-cards grid-cards--sm">
                         <div className="card" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
                             <h3 style={{ color: 'white', fontSize: '0.85rem' }}>VALOR TOTAL</h3>
                             <p style={{ fontSize: '1.6rem', fontWeight: 'bold', margin: '0.5rem 0', color: 'white' }}>{formatCurrency(totalValue)}</p>
@@ -56,7 +56,7 @@ const RealEstate: React.FC = () => {
 
                     <div className="card">
                         <h2>Mis Propiedades</h2>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                        <div className="grid-cards grid-cards--md">
                             {data.properties.map((prop) => {
                                 const annualGrossIncome = prop.monthlyRent * ((prop.occupancy ?? 100) / 100) * 12;
                                 const annualNetIncome = annualGrossIncome - (prop.mortgagePayment ?? 0) * 12 - (prop.annualCosts ?? 0);
@@ -64,7 +64,7 @@ const RealEstate: React.FC = () => {
                                 return (
                                 <div key={prop.id} style={{ background: '#f9f9f9', padding: '1rem', borderRadius: '8px' }}>
                                     <h3 style={{ margin: '0 0 1rem 0' }}>{prop.name}</h3>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                                    <div className="grid-2 grid-2--tight">
                                         <div>
                                             <p style={{ margin: 0, color: '#666', fontSize: '0.85rem' }}>Valor Catastral</p>
                                             <p style={{ margin: '0.25rem 0 0 0', fontWeight: 'bold' }}>{formatCurrency(prop.value)}</p>

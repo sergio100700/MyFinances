@@ -228,7 +228,7 @@ const Portfolio: React.FC = () => {
                 </div>
             ) : (
                 <>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+                    <div className="grid-cards grid-cards--md">
                         <div className="card" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
                             <h3 style={{ color: 'white', margin: 0, marginBottom: '0.5rem' }}>INVERTIDO</h3>
                             <p style={{ fontSize: '1.8rem', fontWeight: 'bold', margin: '0.5rem 0', color: 'white' }}>{formatCurrency(totalInvested)}</p>
@@ -263,7 +263,7 @@ const Portfolio: React.FC = () => {
                             <tbody>
                                 {data.investments.map((inv) => {
                                     const gain = inv.currentValue - inv.amount;
-                                    const gainPct = ((gain / inv.amount) * 100).toFixed(1);
+                                    const gainPct = inv.amount > 0 ? ((gain / inv.amount) * 100).toFixed(1) : '0.0';
                                     return (
                                         <tr key={inv.id} style={{ borderBottom: '1px solid #eee' }}>
                                             <td style={{ padding: '1rem' }}>
@@ -423,7 +423,7 @@ const Portfolio: React.FC = () => {
                                                 )}
                                             </td>
                                             <td style={{ textAlign: 'right', padding: '1rem', color: gain >= 0 ? '#27ae60' : '#e74c3c', fontWeight: 'bold' }}>
-                                                {gain >= 0 ? '+' : ''}{gainPct}%
+                                                {gain >= 0 ? '+' : ''}{gainPct}% ({gain >= 0 ? '+' : ''}{formatCurrency(gain)})
                                             </td>
                                             <td style={{ textAlign: 'center', padding: '1rem' }}>
                                                 {editingId === inv.id ? (

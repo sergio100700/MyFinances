@@ -47,7 +47,7 @@ const Dashboard: React.FC = () => {
                 Bienvenido a tu panel financiero. Aquí verás un resumen de tu situación económica.
             </p>
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+            <div className="grid-cards">
                 {stats.map((stat, i) => (
                     <div key={i} className="card" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', textAlign: 'center' }}>
                         <h3 style={{ color: 'white', marginBottom: '1rem', fontSize: '0.85rem', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{stat.label}</h3>

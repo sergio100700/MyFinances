@@ -106,7 +106,7 @@ const Budgets: React.FC = () => {
                 </strong>
             </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '2rem' }}>
+            <div className="grid-2" style={{ marginBottom: '2rem' }}>
                 <div>
                     <h3 style={{ marginTop: 0 }}>Mis Presupuestos</h3>
                     <BudgetForm onSuccess={() => setRefresh(prev => prev + 1)} />

@@ -31,9 +31,9 @@ const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     return (
         <div className="app-shell">
             <header>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <div className="header-bar">
                     <h1 style={{ margin: 0 }}>💰 Mi Cartera Financiera</h1>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <div className="header-actions">
                         <button
                             onClick={() => setSettingsOpen(true)}
                             style={{
