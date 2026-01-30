@@ -4,7 +4,6 @@ import { formatCurrency } from '../lib/format';
 import type { FinanceData } from '../types';
 
 const Dashboard: React.FC = () => {
-    const [refresh, setRefresh] = useState(0);
     const [data, setData] = useState<FinanceData>({ transactions: [], investments: [], properties: [], budgets: [] });
 
     useEffect(() => {
@@ -17,14 +16,9 @@ const Dashboard: React.FC = () => {
             }
         };
         fetchData();
-    }, [refresh]);
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setRefresh(prev => prev + 1);
-        }, 1000);
-        return () => clearInterval(interval);
     }, []);
+
+
 
     const totalAssets = getTotalAssets(data);
     const ytdReturn = getYTDReturn(data);
