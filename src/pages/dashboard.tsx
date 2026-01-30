@@ -1,12 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { loadData, getTotalAssets, getYTDReturn, getMonthlyIncome } from '../lib/storage';
 import { formatCurrency } from '../lib/format';
 import type { FinanceData } from '../types';
 
 const Dashboard: React.FC = () => {
     const [data, setData] = useState<FinanceData>({ transactions: [], investments: [], properties: [], budgets: [] });
+    const loadedRef = useRef(false);
 
     useEffect(() => {
+        if (loadedRef.current) return; // Evitar doble ejecución en Strict Mode
+        loadedRef.current = true;
+
         const fetchData = async () => {
             try {
                 const loadedData = await loadData();
