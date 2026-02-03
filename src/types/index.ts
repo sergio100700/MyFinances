@@ -32,6 +32,47 @@ export interface Investment {
   savingsLastUpdate?: string; // Date when interest was last applied
 }
 
+export interface PropertyMonthlyIncome {
+  id: string;
+  propertyId: string;
+  yearMonth: string; // YYYY-MM
+  concept: string; // "Alquiler", "Extra", etc.
+  amount: number;
+  paid: boolean; // Si se ha recibido el pago
+}
+
+export interface PropertyMonthlyExpense {
+  id: string;
+  propertyId: string;
+  yearMonth: string; // YYYY-MM
+  concept: string; // "Comunidad", "IBI", "Basura", "Hipoteca", "Derrama", etc.
+  amount: number;
+  paid: boolean; // Si se ha pagado
+}
+
+export interface PropertyTemplateIncome {
+  id: string;
+  concept: string; // "Alquiler", "Extra", etc.
+  amount: number;
+  repeatingMonths: number[]; // Meses en los que se repite (1-12)
+}
+
+export interface PropertyTemplateExpense {
+  id: string;
+  concept: string; // "Hipoteca", "Comunidad", etc.
+  amount: number;
+  repeatingMonths: number[]; // Meses en los que se repite (1-12)
+}
+
+export interface PropertyYearlyTemplate {
+  id: string;
+  propertyId: string;
+  year: number;
+  incomes: PropertyTemplateIncome[];
+  expenses: PropertyTemplateExpense[];
+  lastApplied?: string; // YYYY-MM fecha en la que se aplicó
+}
+
 export interface Property {
   id: string;
   name: string;
@@ -43,7 +84,9 @@ export interface Property {
   purchaseDate: string;
   appreciation: number;
   occupancy: number;
-}
+  monthlyIncomes?: PropertyMonthlyIncome[]; // Registros de ingresos mes a mes
+  monthlyExpenses?: PropertyMonthlyExpense[]; // Registros de gastos mes a mes
+  yearlyTemplate?: PropertyYearlyTemplate; // Plantilla anual
 
 export interface BudgetCategory {
   id: string;

@@ -3,10 +3,14 @@ import { loadData } from '../lib/storage';
 import { formatCurrency } from '../lib/format';
 import type { FinanceData } from '../types';
 import { PropertyForm } from '../components/forms/PropertyForm';
+import { PropertyMonthlyRecords } from '../components/forms/PropertyMonthlyRecords';
+import { PropertyYearlyTemplateComponent } from '../components/forms/PropertyYearlyTemplate';
 
 const RealEstate: React.FC = () => {
     const [refresh, setRefresh] = useState(0);
+    const [templateApplied, setTemplateApplied] = useState(0);
     const [data, setData] = useState<FinanceData>({ transactions: [], investments: [], properties: [], budgets: [] });
+    const currentYear = new Date().getFullYear();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -104,6 +108,8 @@ const RealEstate: React.FC = () => {
                                             </p>
                                         </div>
                                     </div>
+                                    <PropertyYearlyTemplateComponent property={prop} year={currentYear} onSuccess={() => setRefresh(prev => prev + 1)} onAfterApply={() => setTemplateApplied(prev => prev + 1)} />
+                                    <PropertyMonthlyRecords property={prop} onSuccess={() => setRefresh(prev => prev + 1)} refreshTrigger={templateApplied} />
                                 </div>
                                 );
                             })}

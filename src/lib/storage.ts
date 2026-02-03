@@ -1,4 +1,4 @@
-import { FinanceData, Transaction, Investment, Property, BudgetCategory, Contribution } from '../types';
+import { FinanceData, Transaction, Investment, Property, BudgetCategory, Contribution, PropertyMonthlyIncome, PropertyMonthlyExpense, PropertyYearlyTemplate } from '../types';
 import { supabase } from './supabaseClient';
 
 const defaultData: FinanceData = {
@@ -581,3 +581,326 @@ export const importAllData = async (file: File): Promise<void> => {
 
   await updateCurrency(importData.settings.currency);
 };
+
+// Property Monthly Records
+export const addPropertyMonthlyIncome = async (income: Omit<PropertyMonthlyIncome, 'id'>) => {
+  const userId = await getUserId();
+  const { data, error } = await supabase
+    .from('property_monthly_incomes')
+    .insert({
+      user_id: userId,
+      property_id: income.propertyId,
+      year_month: income.yearMonth,
+      concept: income.concept,
+      amount: income.amount,
+      paid: income.paid,
+    })
+    .select('*')
+    .single();
+
+  if (error || !data) throw new Error(error?.message ?? 'Error al crear ingreso');
+  return mapPropertyMonthlyIncome(data);
+};
+
+export const addPropertyMonthlyExpense = async (expense: Omit<PropertyMonthlyExpense, 'id'>) => {
+  const userId = await getUserId();
+  const { data, error } = await supabase
+    .from('property_monthly_expenses')
+    .insert({
+      user_id: userId,
+      property_id: expense.propertyId,
+      year_month: expense.yearMonth,
+      concept: expense.concept,
+      amount: expense.amount,
+      paid: expense.paid,
+    })
+    .select('*')
+    .single();
+
+  if (error || !data) throw new Error(error?.message ?? 'Error al crear gasto');
+  return mapPropertyMonthlyExpense(data);
+};
+
+export const loadPropertyMonthlyRecords = async (propertyId: string) => {
+  const userId = await getUserId();
+  const [incomesRes, expensesRes] = await Promise.all([
+    supabase
+      .from('property_monthly_incomes')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('property_id', propertyId),
+    supabase
+      .from('property_monthly_expenses')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('property_id', propertyId),
+  ]);
+
+  if (incomesRes.error) throw new Error(incomesRes.error.message);
+  if (expensesRes.error) throw new Error(expensesRes.error.message);
+
+  return {
+    incomes: (incomesRes.data ?? []).map(mapPropertyMonthlyIncome),
+    expenses: (expensesRes.data ?? []).map(mapPropertyMonthlyExpense),
+  };
+};
+
+export const updatePropertyMonthlyIncome = async (incomeId: string, updates: Partial<PropertyMonthlyIncome>) => {
+  const userId = await getUserId();
+  const updateData: any = {};
+  if (updates.paid !== undefined) updateData.paid = updates.paid;
+  if (updates.concept !== undefined) updateData.concept = updates.concept;
+  if (updates.amount !== undefined) updateData.amount = updates.amount;
+
+  const { error } = await supabase
+    .from('property_monthly_incomes')
+    .update(updateData)
+    .eq('id', incomeId)
+    .eq('user_id', userId);
+
+  if (error) throw new Error(error.message);
+};
+
+export const updatePropertyMonthlyExpense = async (expenseId: string, updates: Partial<PropertyMonthlyExpense>) => {
+  const userId = await getUserId();
+  const updateData: any = {};
+  if (updates.paid !== undefined) updateData.paid = updates.paid;
+  if (updates.concept !== undefined) updateData.concept = updates.concept;
+  if (updates.amount !== undefined) updateData.amount = updates.amount;
+
+  const { error } = await supabase
+    .from('property_monthly_expenses')
+    .update(updateData)
+    .eq('id', expenseId)
+    .eq('user_id', userId);
+
+  if (error) throw new Error(error.message);
+};
+
+export const deletePropertyMonthlyIncome = async (incomeId: string) => {
+  const userId = await getUserId();
+  const { error } = await supabase
+    .from('property_monthly_incomes')
+    .delete()
+    .eq('id', incomeId)
+    .eq('user_id', userId);
+
+  if (error) throw new Error(error.message);
+};
+
+export const deletePropertyMonthlyExpense = async (expenseId: string) => {
+  const userId = await getUserId();
+  const { error } = await supabase
+    .from('property_monthly_expenses')
+    .delete()
+    .eq('id', expenseId)
+    .eq('user_id', userId);
+
+  if (error) throw new Error(error.message);
+};
+
+const mapPropertyMonthlyIncome = (row: any): PropertyMonthlyIncome => ({
+  id: row.id,
+  propertyId: row.property_id,
+  yearMonth: row.year_month,
+  concept: row.concept,
+  amount: toNumber(row.amount),
+  paid: row.paid ?? false,
+});
+
+const mapPropertyMonthlyExpense = (row: any): PropertyMonthlyExpense => ({
+  id: row.id,
+  propertyId: row.property_id,
+  yearMonth: row.year_month,
+  concept: row.concept,
+  amount: toNumber(row.amount),
+  paid: row.paid ?? false,
+});
+
+// Property Yearly Templates
+export const savePropertyYearlyTemplate = async (template: PropertyYearlyTemplate) => {
+  const userId = await getUserId();
+  const { data, error } = await supabase
+    .from('property_yearly_templates')
+    .upsert(
+      {
+        id: template.id,
+        user_id: userId,
+        property_id: template.propertyId,
+        year: template.year,
+        incomes: template.incomes,
+        expenses: template.expenses,
+        last_applied: template.lastApplied ?? null,
+      },
+      { onConflict: 'id' }
+    )
+    .select('*')
+    .single();
+
+  if (error || !data) throw new Error(error?.message ?? 'Error saving template');
+  return mapPropertyYearlyTemplate(data);
+};
+
+export const loadPropertyYearlyTemplate = async (propertyId: string, year: number) => {
+  const userId = await getUserId();
+  const { data, error } = await supabase
+    .from('property_yearly_templates')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('property_id', propertyId)
+    .eq('year', year)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data ? mapPropertyYearlyTemplate(data) : null;
+};
+
+export const applyYearlyTemplateToPeriod = async (
+  propertyId: string,
+  template: PropertyYearlyTemplate,
+  startMonth: number,
+  endMonth: number,
+  year: number
+) => {
+  const userId = await getUserId();
+
+  // Construir lista de meses en el período
+  const monthsInPeriod = [];
+  for (let month = startMonth; month <= endMonth; month++) {
+    const monthStr = month.toString().padStart(2, '0');
+    monthsInPeriod.push(`${year}-${monthStr}`);
+  }
+
+  // Cargar registros existentes en el período para preservar los pagados
+  const { data: existingIncomes, error: loadIncomeError } = await supabase
+    .from('property_monthly_incomes')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('property_id', propertyId)
+    .in('year_month', monthsInPeriod);
+  
+  if (loadIncomeError) throw new Error(loadIncomeError.message);
+
+  const { data: existingExpenses, error: loadExpenseError } = await supabase
+    .from('property_monthly_expenses')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('property_id', propertyId)
+    .in('year_month', monthsInPeriod);
+  
+  if (loadExpenseError) throw new Error(loadExpenseError.message);
+
+  // Borrar SOLO ingresos que NO están marcados como pagados
+  const existingIncomeIds = (existingIncomes || [])
+    .filter(inc => !inc.paid)  // Solo borrar los NO pagados
+    .map(inc => inc.id);
+  
+  if (existingIncomeIds.length > 0) {
+    const { error: deleteIncomeError } = await supabase
+      .from('property_monthly_incomes')
+      .delete()
+      .in('id', existingIncomeIds);
+    
+    if (deleteIncomeError) throw new Error(deleteIncomeError.message);
+  }
+
+  // Borrar SOLO gastos que NO están marcados como pagados
+  const existingExpenseIds = (existingExpenses || [])
+    .filter(exp => !exp.paid)  // Solo borrar los NO pagados
+    .map(exp => exp.id);
+  
+  if (existingExpenseIds.length > 0) {
+    const { error: deleteExpenseError } = await supabase
+      .from('property_monthly_expenses')
+      .delete()
+      .in('id', existingExpenseIds);
+    
+    if (deleteExpenseError) throw new Error(deleteExpenseError.message);
+  }
+
+  // Agregar ingresos de plantilla (solo si no existen ya o si el existente está pagado)
+  const incomesToAdd = [];
+  for (let month = startMonth; month <= endMonth; month++) {
+    const monthStr = month.toString().padStart(2, '0');
+    for (const templateIncome of template.incomes) {
+      if (templateIncome.repeatingMonths.includes(month)) {
+        const yearMonth = `${year}-${monthStr}`;
+        // No agregar si ya existe un ingreso pagado con el mismo concepto en este mes
+        const existingPaidIncome = (existingIncomes || []).find(
+          inc => inc.year_month === yearMonth && 
+                 inc.concept === templateIncome.concept && 
+                 inc.paid
+        );
+        
+        if (!existingPaidIncome) {
+          incomesToAdd.push({
+            user_id: userId,
+            property_id: propertyId,
+            year_month: yearMonth,
+            concept: templateIncome.concept,
+            amount: templateIncome.amount,
+            paid: false,
+          });
+        }
+      }
+    }
+  }
+
+  if (incomesToAdd.length > 0) {
+    const { error: incomeError } = await supabase
+      .from('property_monthly_incomes')
+      .insert(incomesToAdd);
+    if (incomeError) throw new Error(incomeError.message);
+  }
+
+  // Agregar gastos de plantilla (solo si no existen ya o si el existente está pagado)
+  const expensesToAdd = [];
+  for (let month = startMonth; month <= endMonth; month++) {
+    const monthStr = month.toString().padStart(2, '0');
+    for (const templateExpense of template.expenses) {
+      if (templateExpense.repeatingMonths.includes(month)) {
+        const yearMonth = `${year}-${monthStr}`;
+        // No agregar si ya existe un gasto pagado con el mismo concepto en este mes
+        const existingPaidExpense = (existingExpenses || []).find(
+          exp => exp.year_month === yearMonth && 
+                 exp.concept === templateExpense.concept && 
+                 exp.paid
+        );
+        
+        if (!existingPaidExpense) {
+          expensesToAdd.push({
+            user_id: userId,
+            property_id: propertyId,
+            year_month: yearMonth,
+            concept: templateExpense.concept,
+            amount: templateExpense.amount,
+            paid: false,
+          });
+        }
+      }
+    }
+  }
+
+  if (expensesToAdd.length > 0) {
+    const { error: expenseError } = await supabase
+      .from('property_monthly_expenses')
+      .insert(expensesToAdd);
+    if (expenseError) throw new Error(expenseError.message);
+  }
+
+  // Actualizar last_applied
+  const newLastApplied = `${year}-${endMonth.toString().padStart(2, '0')}`;
+  await savePropertyYearlyTemplate({
+    ...template,
+    lastApplied: newLastApplied,
+  });
+};
+
+const mapPropertyYearlyTemplate = (row: any): PropertyYearlyTemplate => ({
+  id: row.id,
+  propertyId: row.property_id,
+  year: row.year,
+  incomes: row.incomes ?? [],
+  expenses: row.expenses ?? [],
+  lastApplied: row.last_applied ?? undefined,
+});
