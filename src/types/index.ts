@@ -7,31 +7,6 @@ export interface Transaction {
   type: 'income' | 'expense';
 }
 
-export interface Contribution {
-  id: string;
-  date: string;
-  amount: number; // Amount invested in this contribution
-  shares: number; // Number of shares/units acquired
-  pricePerShare: number; // Price per share at contribution
-}
-
-export interface Investment {
-  id: string;
-  name: string;
-  isin: string; // ISIN code for Yahoo Finance lookup
-  shares: number; // Number of shares/units owned
-  purchasePrice: number; // Price per share at purchase (or average price)
-  amount: number; // Total invested (shares * purchasePrice)
-  currentValue: number; // Current market value (updated from Yahoo Finance)
-  currentPrice?: number; // Current price per share
-  valuationMode?: 'auto' | 'manual'; // auto uses ISIN price, manual uses user values
-  purchaseDate: string;
-  type: 'stocks' | 'etf' | 'funds' | 'crypto' | 'bonds' | 'savings' | 'other';
-  contributions?: Contribution[]; // Aportaciones mensuales/semanales/extras
-  savingsRate?: number; // Annual rate in % (manual)
-  savingsLastUpdate?: string; // Date when interest was last applied
-}
-
 export interface PropertyMonthlyIncome {
   id: string;
   propertyId: string;
@@ -101,7 +76,6 @@ export interface BudgetCategory {
 
 export interface FinanceData {
   transactions: Transaction[];
-  investments: Investment[];
   properties: Property[];
   budgets: BudgetCategory[];
 }

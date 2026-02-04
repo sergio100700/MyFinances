@@ -1,9 +1,8 @@
-import { FinanceData, Transaction, Investment, Property, BudgetCategory, Contribution, PropertyMonthlyIncome, PropertyMonthlyExpense, PropertyYearlyTemplate } from '../types';
+import { FinanceData, Transaction, Property, BudgetCategory, PropertyMonthlyIncome, PropertyMonthlyExpense, PropertyYearlyTemplate } from '../types';
 import { supabase } from './supabaseClient';
 
 const defaultData: FinanceData = {
   transactions: [],
-  investments: [],
   properties: [],
   budgets: [],
 };
@@ -126,30 +125,7 @@ const mapTransaction = (row: any): Transaction => ({
   type: row.type,
 });
 
-const mapContribution = (row: any): Contribution => ({
-  id: row.id,
-  date: row.date,
-  amount: toNumber(row.amount),
-  shares: toNumber(row.shares),
-  pricePerShare: toNumber(row.price_per_share),
-});
 
-const mapInvestment = (row: any): Investment => ({
-  id: row.id,
-  name: row.name,
-  isin: row.isin,
-  shares: toNumber(row.shares),
-  purchasePrice: toNumber(row.purchase_price),
-  amount: toNumber(row.amount),
-  currentValue: toNumber(row.current_value),
-  currentPrice: row.current_price === null ? undefined : toNumber(row.current_price),
-  valuationMode: row.valuation_mode,
-  purchaseDate: row.purchase_date,
-  type: row.type,
-  savingsRate: row.savings_rate === null ? undefined : toNumber(row.savings_rate),
-  savingsLastUpdate: row.savings_last_update ?? undefined,
-  contributions: Array.isArray(row.contributions) ? row.contributions.map(mapContribution) : [],
-});
 
 const mapProperty = (row: any): Property => ({
   id: row.id,
@@ -178,21 +154,18 @@ const mapBudget = (row: any): BudgetCategory => ({
 export const loadData = async (): Promise<FinanceData> => {
   const userId = await getUserId();
 
-  const [transactionsRes, investmentsRes, propertiesRes, budgetsRes] = await Promise.all([
+  const [transactionsRes, propertiesRes, budgetsRes] = await Promise.all([
     supabase.from('transactions').select('*').eq('user_id', userId),
-    supabase.from('investments').select('*, contributions(*)').eq('user_id', userId),
     supabase.from('properties').select('*').eq('user_id', userId),
     supabase.from('budgets').select('*').eq('user_id', userId),
   ]);
 
   if (transactionsRes.error) throw new Error(transactionsRes.error.message);
-  if (investmentsRes.error) throw new Error(investmentsRes.error.message);
   if (propertiesRes.error) throw new Error(propertiesRes.error.message);
   if (budgetsRes.error) throw new Error(budgetsRes.error.message);
 
   return {
     transactions: (transactionsRes.data ?? []).map(mapTransaction),
-    investments: (investmentsRes.data ?? []).map(mapInvestment),
     properties: (propertiesRes.data ?? []).map(mapProperty),
     budgets: (budgetsRes.data ?? []).map(mapBudget),
   };
@@ -226,77 +199,6 @@ export const deleteTransaction = async (id: string) => {
     .eq('id', id)
     .eq('user_id', userId);
   if (error) throw new Error(error.message);
-};
-
-// Investments
-export const addInvestment = async (investment: Omit<Investment, 'id'>) => {
-  const userId = await getUserId();
-  const { data, error } = await supabase
-    .from('investments')
-    .insert({
-      user_id: userId,
-      name: investment.name,
-      isin: investment.isin,
-      shares: investment.shares,
-      purchase_price: investment.purchasePrice,
-      amount: investment.amount,
-      current_value: investment.currentValue,
-      current_price: investment.currentPrice ?? null,
-      valuation_mode: investment.valuationMode ?? 'auto',
-      purchase_date: investment.purchaseDate,
-      type: investment.type,
-      savings_rate: investment.savingsRate ?? null,
-      savings_last_update: investment.savingsLastUpdate ?? null,
-    })
-    .select('*, contributions(*)')
-    .single();
-
-  if (error || !data) throw new Error(error?.message ?? 'Error al crear inversión');
-  return mapInvestment(data);
-};
-
-export const deleteInvestment = async (id: string) => {
-  const userId = await getUserId();
-  const { error } = await supabase
-    .from('investments')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', userId);
-  if (error) throw new Error(error.message);
-};
-
-const mapInvestmentUpdates = (updates: Partial<Investment>) => {
-  const mapped: Record<string, unknown> = {};
-  if (updates.name !== undefined) mapped.name = updates.name;
-  if (updates.isin !== undefined) mapped.isin = updates.isin;
-  if (updates.shares !== undefined) mapped.shares = updates.shares;
-  if (updates.purchasePrice !== undefined) mapped.purchase_price = updates.purchasePrice;
-  if (updates.amount !== undefined) mapped.amount = updates.amount;
-  if (updates.currentValue !== undefined) mapped.current_value = updates.currentValue;
-  if (updates.currentPrice !== undefined) mapped.current_price = updates.currentPrice ?? null;
-  if (updates.valuationMode !== undefined) mapped.valuation_mode = updates.valuationMode;
-  if (updates.purchaseDate !== undefined) mapped.purchase_date = updates.purchaseDate;
-  if (updates.type !== undefined) mapped.type = updates.type;
-  if (updates.savingsRate !== undefined) mapped.savings_rate = updates.savingsRate ?? null;
-  if (updates.savingsLastUpdate !== undefined) mapped.savings_last_update = updates.savingsLastUpdate ?? null;
-  return mapped;
-};
-
-export const updateInvestment = async (id: string, updates: Partial<Investment>) => {
-  const userId = await getUserId();
-  const mapped = mapInvestmentUpdates(updates);
-  if (Object.keys(mapped).length === 0) return null;
-
-  const { data, error } = await supabase
-    .from('investments')
-    .update(mapped)
-    .eq('id', id)
-    .eq('user_id', userId)
-    .select('*, contributions(*)')
-    .single();
-
-  if (error || !data) throw new Error(error?.message ?? 'Error al actualizar inversión');
-  return mapInvestment(data);
 };
 
 // Properties
@@ -394,41 +296,14 @@ export const updateBudget = async (id: string, updates: Partial<BudgetCategory>)
   return mapBudget(data);
 };
 
-export const addContribution = async (investmentId: string, contribution: Omit<Contribution, 'id'>) => {
-  const { data, error } = await supabase
-    .from('contributions')
-    .insert({
-      investment_id: investmentId,
-      date: contribution.date,
-      amount: contribution.amount,
-      shares: contribution.shares,
-      price_per_share: contribution.pricePerShare,
-    })
-    .select('*')
-    .single();
-
-  if (error || !data) throw new Error(error?.message ?? 'Error al crear aportación');
-  return mapContribution(data);
-};
-
-export const deleteContribution = async (id: string) => {
-  const { error } = await supabase
-    .from('contributions')
-    .delete()
-    .eq('id', id);
-  if (error) throw new Error(error.message);
-};
-
 // Calculations
 export const getTotalAssets = (data: FinanceData): number => {
-  const investmentsTotal = data.investments.reduce((sum, inv) => sum + inv.currentValue, 0);
   const propertiesTotal = data.properties.reduce((sum, prop) => sum + (prop.value - prop.mortgage), 0);
-  return investmentsTotal + propertiesTotal;
+  return propertiesTotal;
 };
 
 export const getYTDReturn = (data: FinanceData): number => {
-  const investments = data.investments.reduce((sum, inv) => sum + (inv.currentValue - inv.amount), 0);
-  return investments;
+  return 0;
 };
 
 export const getMonthlyIncome = (data: FinanceData): number => {
@@ -485,10 +360,9 @@ export const importAllData = async (file: File): Promise<void> => {
     throw new Error('Formato de archivo inválido');
   }
 
-  const { transactions, investments, properties, budgets } = importData.data as FinanceData;
+  const { transactions, properties, budgets } = importData.data as FinanceData;
 
   await supabase.from('transactions').delete().eq('user_id', userId);
-  await supabase.from('investments').delete().eq('user_id', userId);
   await supabase.from('properties').delete().eq('user_id', userId);
   await supabase.from('budgets').delete().eq('user_id', userId);
 
@@ -535,48 +409,6 @@ export const importAllData = async (file: File): Promise<void> => {
         start_date: b.startDate ?? null,
       }))
     );
-  }
-
-  if (investments.length > 0) {
-    for (const inv of investments) {
-      const insertInvestment = await supabase
-        .from('investments')
-        .insert({
-          user_id: userId,
-          name: inv.name,
-          isin: inv.isin,
-          shares: inv.shares,
-          purchase_price: inv.purchasePrice,
-          amount: inv.amount,
-          current_value: inv.currentValue,
-          current_price: inv.currentPrice ?? null,
-          valuation_mode: inv.valuationMode ?? 'auto',
-          purchase_date: inv.purchaseDate,
-          type: inv.type,
-          savings_rate: inv.savingsRate ?? null,
-          savings_last_update: inv.savingsLastUpdate ?? null,
-        })
-        .select('id')
-        .single();
-
-      if (insertInvestment.error || !insertInvestment.data) {
-        throw new Error(insertInvestment.error?.message ?? 'Error importando inversiones');
-      }
-
-      const investmentId = insertInvestment.data.id;
-      const contributions = inv.contributions ?? [];
-      if (contributions.length > 0) {
-        await supabase.from('contributions').insert(
-          contributions.map(c => ({
-            investment_id: investmentId,
-            date: c.date,
-            amount: c.amount,
-            shares: c.shares,
-            price_per_share: c.pricePerShare,
-          }))
-        );
-      }
-    }
   }
 
   await updateCurrency(importData.settings.currency);

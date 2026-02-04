@@ -4,7 +4,7 @@ import { formatCurrency } from '../lib/format';
 import type { FinanceData } from '../types';
 
 const Dashboard: React.FC = () => {
-    const [data, setData] = useState<FinanceData>({ transactions: [], investments: [], properties: [], budgets: [] });
+    const [data, setData] = useState<FinanceData>({ transactions: [], properties: [], budgets: [] });
     const loadedRef = useRef(false);
 
     useEffect(() => {
@@ -59,13 +59,12 @@ const Dashboard: React.FC = () => {
 
             <div className="card">
                 <h2>Distribución de Activos</h2>
-                <p>Inversiones: {data.investments.length} | Propiedades: {data.properties.length} | Transacciones: {data.transactions.length}</p>
+                <p>Propiedades: {data.properties.length} | Transacciones: {data.transactions.length}</p>
             </div>
 
             <div className="card">
                 <h2>Alertas Financieras</h2>
                 <ul style={{ listStyle: 'none', padding: 0 }}>
-                    <li style={{ padding: '0.5rem 0', borderBottom: '1px solid #eee' }}>✓ {data.investments.length > 0 ? `Tienes ${data.investments.length} inversiones activas` : 'Agrega tus primeras inversiones'}</li>
                     <li style={{ padding: '0.5rem 0', borderBottom: '1px solid #eee' }}>✓ {data.properties.length > 0 ? `Ingresos inmobiliarios: ${formatCurrency(monthlyIncome)}` : 'Registra tus propiedades'}</li>
                     <li style={{ padding: '0.5rem 0' }}>✓ Gastos del mes: {formatCurrency(monthlyExpenses)}</li>
                 </ul>

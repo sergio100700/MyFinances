@@ -9,9 +9,6 @@ const Nav: React.FC = () => {
                     <Link to="/">📊 Dashboard</Link>
                 </li>
                 <li>
-                    <Link to="/portfolio">📈 Cartera</Link>
-                </li>
-                <li>
                     <Link to="/budgets">💵 Presupuestos</Link>
                 </li>
                 <li>

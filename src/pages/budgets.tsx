@@ -7,7 +7,7 @@ import { TransactionForm } from '../components/forms/TransactionForm';
 
 const Budgets: React.FC = () => {
     const [refresh, setRefresh] = useState(0);
-    const [data, setData] = useState<FinanceData>({ transactions: [], investments: [], properties: [], budgets: [] });
+    const [data, setData] = useState<FinanceData>({ transactions: [], properties: [], budgets: [] });
     const currentMonth = new Date().toISOString().slice(0, 7);
     const currentYear = new Date().getFullYear().toString();
     const [viewPeriod, setViewPeriod] = useState<'monthly' | 'annual'>('monthly');

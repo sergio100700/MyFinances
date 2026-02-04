@@ -9,7 +9,7 @@ import { PropertyYearlyTemplateComponent } from '../components/forms/PropertyYea
 const RealEstate: React.FC = () => {
     const [refresh, setRefresh] = useState(0);
     const [templateApplied, setTemplateApplied] = useState(0);
-    const [data, setData] = useState<FinanceData>({ transactions: [], investments: [], properties: [], budgets: [] });
+    const [data, setData] = useState<FinanceData>({ transactions: [], properties: [], budgets: [] });
     const currentYear = new Date().getFullYear();
 
     useEffect(() => {
