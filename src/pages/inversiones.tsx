@@ -4,7 +4,7 @@ import { EscenarioForm, EscenarioList } from '../components/forms/EscenarioCompo
 import { ActivoForm, ActivoList } from '../components/forms/ActivoComponents';
 import { SeguimientoForm, TablaMensual } from '../components/forms/SeguimientoComponents';
 import { ActivoParticipacion } from '../components/forms/ActivoSeguimientoComponents';
-import { getInversionesStore } from '../features/inversiones/inversiones.store';
+import { getInversionesStore } from '../features/inversiones/inversiones.store.supabase';
 import type { Cartera, MesCalculado } from '../features/inversiones/inversiones.types';
 
 const Inversiones: React.FC = () => {
