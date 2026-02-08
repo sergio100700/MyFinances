@@ -14,6 +14,9 @@ const Nav: React.FC = () => {
                 <li>
                     <Link to="/real-estate">🏠 Inmuebles</Link>
                 </li>
+                <li>
+                    <Link to="/inversiones">💼 Inversiones</Link>
+                </li>
             </ul>
         </nav>
     );

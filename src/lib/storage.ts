@@ -1,4 +1,14 @@
 import { FinanceData, Transaction, Property, BudgetCategory, PropertyMonthlyIncome, PropertyMonthlyExpense, PropertyYearlyTemplate } from '../types';
+import { 
+  Cartera, 
+  Activo, 
+  Escenario, 
+  SeguimientoCartera, 
+  Aportacion, 
+  RegistroReal, 
+  ActivoValorActual,
+  Investment
+} from '../features/inversiones/inversiones.types';
 import { supabase } from './supabaseClient';
 
 const defaultData: FinanceData = {
@@ -736,3 +746,606 @@ const mapPropertyYearlyTemplate = (row: any): PropertyYearlyTemplate => ({
   expenses: row.expenses ?? [],
   lastApplied: row.last_applied ?? undefined,
 });
+// ================================================================
+// INVERSIONES - CARTERAS
+// ================================================================
+
+const mapCartera = (row: any): Cartera => ({
+  id: row.id,
+  nombre: row.nombre,
+  descripcion: row.descripcion ?? undefined,
+  fecha: row.fecha,
+});
+
+export const loadCarteras = async (): Promise<Cartera[]> => {
+  const userId = await getUserId();
+  const { data, error } = await supabase
+    .from('carteras')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(mapCartera);
+};
+
+export const addCartera = async (cartera: Omit<Cartera, 'id'>): Promise<Cartera> => {
+  const userId = await getUserId();
+  const { data, error } = await supabase
+    .from('carteras')
+    .insert({
+      user_id: userId,
+      nombre: cartera.nombre,
+      descripcion: cartera.descripcion ?? null,
+      fecha: cartera.fecha,
+    })
+    .select('*')
+    .single();
+
+  if (error || !data) throw new Error(error?.message ?? 'Error al crear cartera');
+  return mapCartera(data);
+};
+
+export const updateCartera = async (id: string, updates: Partial<Cartera>): Promise<Cartera> => {
+  const userId = await getUserId();
+  const updateData: any = {};
+  if (updates.nombre !== undefined) updateData.nombre = updates.nombre;
+  if (updates.descripcion !== undefined) updateData.descripcion = updates.descripcion ?? null;
+  if (updates.fecha !== undefined) updateData.fecha = updates.fecha;
+
+  const { data, error } = await supabase
+    .from('carteras')
+    .update(updateData)
+    .eq('id', id)
+    .eq('user_id', userId)
+    .select('*')
+    .single();
+
+  if (error || !data) throw new Error(error?.message ?? 'Error al actualizar cartera');
+  return mapCartera(data);
+};
+
+export const deleteCartera = async (id: string): Promise<void> => {
+  const userId = await getUserId();
+  const { error } = await supabase
+    .from('carteras')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', userId);
+
+  if (error) throw new Error(error.message);
+};
+
+// ================================================================
+// INVERSIONES - ACTIVOS
+// ================================================================
+
+const mapActivo = (row: any): Activo => ({
+  id: row.id,
+  nombre: row.nombre,
+  tipo: row.tipo,
+  capitalInicial: toNumber(row.capital_inicial),
+  fecha: row.fecha,
+  carteraId: row.cartera_id,
+});
+
+export const loadActivos = async (): Promise<Activo[]> => {
+  const userId = await getUserId();
+  const { data, error } = await supabase
+    .from('activos')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(mapActivo);
+};
+
+export const loadActivosPorCartera = async (carteraId: string): Promise<Activo[]> => {
+  const userId = await getUserId();
+  const { data, error } = await supabase
+    .from('activos')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('cartera_id', carteraId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(mapActivo);
+};
+
+export const addActivo = async (activo: Omit<Activo, 'id'>): Promise<Activo> => {
+  const userId = await getUserId();
+  const { data, error } = await supabase
+    .from('activos')
+    .insert({
+      user_id: userId,
+      cartera_id: activo.carteraId,
+      nombre: activo.nombre,
+      tipo: activo.tipo,
+      capital_inicial: activo.capitalInicial,
+      fecha: activo.fecha,
+    })
+    .select('*')
+    .single();
+
+  if (error || !data) throw new Error(error?.message ?? 'Error al crear activo');
+  return mapActivo(data);
+};
+
+export const updateActivo = async (id: string, updates: Partial<Activo>): Promise<Activo> => {
+  const userId = await getUserId();
+  const updateData: any = {};
+  if (updates.nombre !== undefined) updateData.nombre = updates.nombre;
+  if (updates.tipo !== undefined) updateData.tipo = updates.tipo;
+  if (updates.capitalInicial !== undefined) updateData.capital_inicial = updates.capitalInicial;
+  if (updates.fecha !== undefined) updateData.fecha = updates.fecha;
+
+  const { data, error } = await supabase
+    .from('activos')
+    .update(updateData)
+    .eq('id', id)
+    .eq('user_id', userId)
+    .select('*')
+    .single();
+
+  if (error || !data) throw new Error(error?.message ?? 'Error al actualizar activo');
+  return mapActivo(data);
+};
+
+export const deleteActivo = async (id: string): Promise<void> => {
+  const userId = await getUserId();
+  const { error } = await supabase
+    .from('activos')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', userId);
+
+  if (error) throw new Error(error.message);
+};
+
+// ================================================================
+// INVERSIONES - ESCENARIOS
+// ================================================================
+
+const mapEscenario = (row: any): Escenario => ({
+  id: row.id,
+  nombre: row.nombre,
+  rentabilidadAnual: toNumber(row.rentabilidad_anual),
+});
+
+export const loadEscenarios = async (): Promise<Escenario[]> => {
+  const userId = await getUserId();
+  const { data, error } = await supabase
+    .from('escenarios')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(mapEscenario);
+};
+
+export const addEscenario = async (escenario: Omit<Escenario, 'id'>): Promise<Escenario> => {
+  const userId = await getUserId();
+  const { data, error } = await supabase
+    .from('escenarios')
+    .insert({
+      user_id: userId,
+      nombre: escenario.nombre,
+      rentabilidad_anual: escenario.rentabilidadAnual,
+    })
+    .select('*')
+    .single();
+
+  if (error || !data) throw new Error(error?.message ?? 'Error al crear escenario');
+  return mapEscenario(data);
+};
+
+export const updateEscenario = async (id: string, updates: Partial<Escenario>): Promise<Escenario> => {
+  const userId = await getUserId();
+  const updateData: any = {};
+  if (updates.nombre !== undefined) updateData.nombre = updates.nombre;
+  if (updates.rentabilidadAnual !== undefined) updateData.rentabilidad_anual = updates.rentabilidadAnual;
+
+  const { data, error } = await supabase
+    .from('escenarios')
+    .update(updateData)
+    .eq('id', id)
+    .eq('user_id', userId)
+    .select('*')
+    .single();
+
+  if (error || !data) throw new Error(error?.message ?? 'Error al actualizar escenario');
+  return mapEscenario(data);
+};
+
+export const deleteEscenario = async (id: string): Promise<void> => {
+  const userId = await getUserId();
+  const { error } = await supabase
+    .from('escenarios')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', userId);
+
+  if (error) throw new Error(error.message);
+};
+
+// ================================================================
+// INVERSIONES - SEGUIMIENTOS CARTERA
+// ================================================================
+
+const mapSeguimientoCartera = (
+  row: any,
+  aportaciones: Aportacion[] = [],
+  registros: RegistroReal[] = []
+): SeguimientoCartera => ({
+  id: row.id,
+  carteraId: row.cartera_id,
+  capitalInicial: toNumber(row.capital_inicial),
+  aportacionMensualBase: toNumber(row.aportacion_mensual_base),
+  aportacionesAdicionales: aportaciones,
+  registrosReales: registros,
+  mesInicio: row.mes_inicio,
+  mesInicioAportaciones: row.mes_inicio_aportaciones,
+  mesFin: row.mes_fin ?? undefined,
+  mesActual: row.mes_actual ?? undefined,
+});
+
+export const loadSeguimientosPorCartera = async (carteraId: string): Promise<SeguimientoCartera | null> => {
+  const userId = await getUserId();
+  
+  // Cargar seguimiento
+  const { data: segData, error: segError } = await supabase
+    .from('seguimientos_cartera')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('cartera_id', carteraId)
+    .maybeSingle();
+
+  if (segError) throw new Error(segError.message);
+  if (!segData) return null;
+
+  // Cargar aportaciones adicionales
+  const { data: aportData, error: aportError } = await supabase
+    .from('aportaciones_adicionales')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('seguimiento_id', segData.id);
+
+  if (aportError) throw new Error(aportError.message);
+
+  const aportaciones: Aportacion[] = (aportData ?? []).map(a => ({
+    mes: a.mes,
+    monto: toNumber(a.monto),
+  }));
+
+  // Cargar registros reales
+  const { data: regData, error: regError } = await supabase
+    .from('registros_reales')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('seguimiento_id', segData.id);
+
+  if (regError) throw new Error(regError.message);
+
+  const registros: RegistroReal[] = (regData ?? []).map(r => ({
+    mes: r.mes,
+    valorReal: toNumber(r.valor_real),
+    rentabilidadReal: r.rentabilidad_real !== null ? toNumber(r.rentabilidad_real) : undefined,
+  }));
+
+  return mapSeguimientoCartera(segData, aportaciones, registros);
+};
+
+export const loadSeguimientos = async (): Promise<SeguimientoCartera[]> => {
+  const userId = await getUserId();
+  
+  const { data: segData, error: segError } = await supabase
+    .from('seguimientos_cartera')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (segError) throw new Error(segError.message);
+  if (!segData) return [];
+
+  // Cargar todas las aportaciones y registros
+  const seguimientos: SeguimientoCartera[] = [];
+  for (const seg of segData) {
+    const { data: aportData } = await supabase
+      .from('aportaciones_adicionales')
+      .select('*')
+      .eq('seguimiento_id', seg.id);
+
+    const { data: regData } = await supabase
+      .from('registros_reales')
+      .select('*')
+      .eq('seguimiento_id', seg.id);
+
+    const aportaciones: Aportacion[] = (aportData ?? []).map(a => ({
+      mes: a.mes,
+      monto: toNumber(a.monto),
+    }));
+
+    const registros: RegistroReal[] = (regData ?? []).map(r => ({
+      mes: r.mes,
+      valorReal: toNumber(r.valor_real),
+      rentabilidadReal: r.rentabilidad_real !== null ? toNumber(r.rentabilidad_real) : undefined,
+    }));
+
+    seguimientos.push(mapSeguimientoCartera(seg, aportaciones, registros));
+  }
+
+  return seguimientos;
+};
+
+export const saveSeguimientoCartera = async (seguimiento: SeguimientoCartera): Promise<SeguimientoCartera> => {
+  const userId = await getUserId();
+
+  // Verificar si ya existe un seguimiento para esta cartera
+  const { data: existing } = await supabase
+    .from('seguimientos_cartera')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('cartera_id', seguimiento.carteraId)
+    .maybeSingle();
+
+  let seguimientoId: string;
+
+  if (existing) {
+    // Actualizar seguimiento existente
+    const { data, error } = await supabase
+      .from('seguimientos_cartera')
+      .update({
+        capital_inicial: seguimiento.capitalInicial,
+        aportacion_mensual_base: seguimiento.aportacionMensualBase,
+        mes_inicio: seguimiento.mesInicio,
+        mes_inicio_aportaciones: seguimiento.mesInicioAportaciones,
+        mes_fin: seguimiento.mesFin ?? null,
+        mes_actual: seguimiento.mesActual ?? null,
+      })
+      .eq('id', existing.id)
+      .eq('user_id', userId)
+      .select('*')
+      .single();
+
+    if (error || !data) throw new Error(error?.message ?? 'Error al actualizar seguimiento');
+    seguimientoId = data.id;
+  } else {
+    // Crear nuevo seguimiento
+    const { data, error } = await supabase
+      .from('seguimientos_cartera')
+      .insert({
+        user_id: userId,
+        cartera_id: seguimiento.carteraId,
+        capital_inicial: seguimiento.capitalInicial,
+        aportacion_mensual_base: seguimiento.aportacionMensualBase,
+        mes_inicio: seguimiento.mesInicio,
+        mes_inicio_aportaciones: seguimiento.mesInicioAportaciones,
+        mes_fin: seguimiento.mesFin ?? null,
+        mes_actual: seguimiento.mesActual ?? null,
+      })
+      .select('*')
+      .single();
+
+    if (error || !data) throw new Error(error?.message ?? 'Error al crear seguimiento');
+    seguimientoId = data.id;
+  }
+
+  // Eliminar aportaciones existentes
+  await supabase
+    .from('aportaciones_adicionales')
+    .delete()
+    .eq('user_id', userId)
+    .eq('seguimiento_id', seguimientoId);
+
+  // Insertar aportaciones adicionales
+  if (seguimiento.aportacionesAdicionales.length > 0) {
+    const { error: aportError } = await supabase
+      .from('aportaciones_adicionales')
+      .insert(
+        seguimiento.aportacionesAdicionales.map(a => ({
+          user_id: userId,
+          seguimiento_id: seguimientoId,
+          mes: a.mes,
+          monto: a.monto,
+        }))
+      );
+
+    if (aportError) throw new Error(aportError.message);
+  }
+
+  // Eliminar registros reales existentes
+  await supabase
+    .from('registros_reales')
+    .delete()
+    .eq('user_id', userId)
+    .eq('seguimiento_id', seguimientoId);
+
+  // Insertar registros reales
+  if (seguimiento.registrosReales.length > 0) {
+    const { error: regError } = await supabase
+      .from('registros_reales')
+      .insert(
+        seguimiento.registrosReales.map(r => ({
+          user_id: userId,
+          seguimiento_id: seguimientoId,
+          mes: r.mes,
+          valor_real: r.valorReal,
+          rentabilidad_real: r.rentabilidadReal ?? null,
+        }))
+      );
+
+    if (regError) throw new Error(regError.message);
+  }
+
+  // Retornar seguimiento actualizado
+  return await loadSeguimientosPorCartera(seguimiento.carteraId) as SeguimientoCartera;
+};
+
+export const deleteSeguimientoCartera = async (carteraId: string): Promise<void> => {
+  const userId = await getUserId();
+  const { error } = await supabase
+    .from('seguimientos_cartera')
+    .delete()
+    .eq('user_id', userId)
+    .eq('cartera_id', carteraId);
+
+  if (error) throw new Error(error.message);
+};
+
+// ================================================================
+// INVERSIONES - VALORES ACTUALES DE ACTIVOS
+// ================================================================
+
+const mapActivoValorActual = (row: any, activoNombre: string): ActivoValorActual => ({
+  id: row.id,
+  activoId: row.activo_id,
+  nombre: activoNombre,
+  cantidadActual: toNumber(row.cantidad_actual),
+  valorActual: toNumber(row.valor_actual),
+  fecha: row.fecha,
+});
+
+export const loadActivosValoresActuales = async (): Promise<ActivoValorActual[]> => {
+  const userId = await getUserId();
+  
+  const { data, error } = await supabase
+    .from('activos_valores_actuales')
+    .select('*, activos(nombre)')
+    .eq('user_id', userId);
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(row => mapActivoValorActual(row, (row as any).activos?.nombre ?? 'Sin nombre'));
+};
+
+export const saveActivoValorActual = async (valor: Omit<ActivoValorActual, 'id'>): Promise<ActivoValorActual> => {
+  const userId = await getUserId();
+
+  // Verificar si ya existe valor para este activo
+  const { data: existing } = await supabase
+    .from('activos_valores_actuales')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('activo_id', valor.activoId)
+    .maybeSingle();
+
+  if (existing) {
+    // Actualizar
+    const { data, error } = await supabase
+      .from('activos_valores_actuales')
+      .update({
+        cantidad_actual: valor.cantidadActual,
+        valor_actual: valor.valorActual,
+        fecha: valor.fecha,
+      })
+      .eq('id', existing.id)
+      .eq('user_id', userId)
+      .select('*, activos(nombre)')
+      .single();
+
+    if (error || !data) throw new Error(error?.message ?? 'Error al actualizar valor actual');
+    return mapActivoValorActual(data, (data as any).activos?.nombre ?? valor.nombre);
+  } else {
+    // Insertar
+    const { data, error } = await supabase
+      .from('activos_valores_actuales')
+      .insert({
+        user_id: userId,
+        activo_id: valor.activoId,
+        cantidad_actual: valor.cantidadActual,
+        valor_actual: valor.valorActual,
+        fecha: valor.fecha,
+      })
+      .select('*, activos(nombre)')
+      .single();
+
+    if (error || !data) throw new Error(error?.message ?? 'Error al crear valor actual');
+    return mapActivoValorActual(data, (data as any).activos?.nombre ?? valor.nombre);
+  }
+};
+
+export const deleteActivoValorActual = async (activoId: string): Promise<void> => {
+  const userId = await getUserId();
+  const { error } = await supabase
+    .from('activos_valores_actuales')
+    .delete()
+    .eq('user_id', userId)
+    .eq('activo_id', activoId);
+
+  if (error) throw new Error(error.message);
+};
+
+// ================================================================
+// PORTFOLIO SIMPLE - INVESTMENTS
+// ================================================================
+
+const mapInvestment = (row: any): Investment => ({
+  id: row.id,
+  name: row.name,
+  amountInvested: toNumber(row.amount_invested),
+  currentValue: toNumber(row.current_value),
+  dateAcquired: new Date(row.date_acquired),
+});
+
+export const loadInvestments = async (): Promise<Investment[]> => {
+  const userId = await getUserId();
+  const { data, error } = await supabase
+    .from('investments')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(mapInvestment);
+};
+
+export const addInvestment = async (investment: Omit<Investment, 'id'>): Promise<Investment> => {
+  const userId = await getUserId();
+  const { data, error } = await supabase
+    .from('investments')
+    .insert({
+      user_id: userId,
+      name: investment.name,
+      amount_invested: investment.amountInvested,
+      current_value: investment.currentValue,
+      date_acquired: investment.dateAcquired.toISOString().split('T')[0],
+    })
+    .select('*')
+    .single();
+
+  if (error || !data) throw new Error(error?.message ?? 'Error al crear inversión');
+  return mapInvestment(data);
+};
+
+export const updateInvestment = async (id: string, updates: Partial<Investment>): Promise<Investment> => {
+  const userId = await getUserId();
+  const updateData: any = {};
+  if (updates.name !== undefined) updateData.name = updates.name;
+  if (updates.amountInvested !== undefined) updateData.amount_invested = updates.amountInvested;
+  if (updates.currentValue !== undefined) updateData.current_value = updates.currentValue;
+  if (updates.dateAcquired !== undefined) updateData.date_acquired = updates.dateAcquired.toISOString().split('T')[0];
+
+  const { data, error } = await supabase
+    .from('investments')
+    .update(updateData)
+    .eq('id', id)
+    .eq('user_id', userId)
+    .select('*')
+    .single();
+
+  if (error || !data) throw new Error(error?.message ?? 'Error al actualizar inversión');
+  return mapInvestment(data);
+};
+
+export const deleteInvestment = async (id: string): Promise<void> => {
+  const userId = await getUserId();
+  const { error } = await supabase
+    .from('investments')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', userId);
+
+  if (error) throw new Error(error.message);
+};
